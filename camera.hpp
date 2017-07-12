@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <GLUT/glut.h>
+#include <GL/glut.h>
 #include <GL/freeglut.h>
 
 using namespace std;
@@ -16,6 +16,8 @@ private:
 	Vector3f upVector;
 
 public:
+
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	Vector3f getPosition() const;
 	void setPosition(const Vector3f&);

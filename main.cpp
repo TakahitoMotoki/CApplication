@@ -1,37 +1,41 @@
 ﻿/******************************************************************************************************************************
 
-	C Application Development (17/07/08)
+C Application Development (17/07/08)
 
-	------これから実装すべき箇所------
+------これから実装すべき箇所------
 
-	1. Objectクラス(object.hpp)の衝突判定関数colling
-	2. Rocketクラス(object.hpp)の描画関数draw
-	3. Meteoriteクラス(object.hpp)の描画関数draw
-	4. 衝突した際の挙動をどうするか
-	5.
-	------OpenGL(Glut)のインストール方法(Visual Studio)------
+1. Objectクラス(object.hpp)の衝突判定関数colling
+2. Rocketクラス(object.hpp)の描画関数draw
+3. Meteoriteクラス(object.hpp)の描画関数draw
+4. 衝突した際の挙動をどうするか
 
-	1. Visual StudioのツールメニューからNuGetパッケージマネージャーからソリューションのNuGetパッケージの管理を開く
-	2. 参照タブを開いてインターネットに接続されている状態でglutと検索
-	3. nupengl.coreというライブラリが出てくるのでインストールを押すだけ
-	
-	------ベクトル演算のためのライブラリEigenのインストール方法(Visual Studio)------
+------OpenGL(Glut)のインストール方法(Visual Studio)------
 
-	1. Visual StudioのツールメニューからNuGetパッケージマネージャーからソリューションのNuGetパッケージの管理を開く
-	2. 参照タブを開いてインターネットに接続されている状態でeigenと検索
-	3. eigenというライブラリが出てくるのでインストールを押すだけ
+1. Visual StudioのツールメニューからNuGetパッケージマネージャーからソリューションのNuGetパッケージの管理を開く
+2. 参照タブを開いてインターネットに接続されている状態でglutと検索
+3. nupengl.coreというライブラリが出てくるのでインストールを押すだけ
 
-	------Eigenの基本的な使い方------
+------ベクトル演算のためのライブラリEigenのインストール方法(Visual Studio)------
 
-	1. 初期化: Vector3f v1(1.0, 2.0, 3.0); や Vector3f v2(v1); など
-	2. 代入: v1 << 1.0, 2.0, 3.0; や v1 = v2; など
-	3. 要素へのアクセス: v1.x() = 1.0; や float x = v.x(); など
-	4. 演算: v1 + v2, v1 - v2, v1 * 1.0, v1 / 1.0, v1.dot(v2), v1.cross(v2) など
-	5. 関数 f(const Vector3f& v) などに引数として渡す場合は f(v1) 以外にも f({ 1.0, 2.0, 3.0 }) などとできる
+1. Visual StudioのツールメニューからNuGetパッケージマネージャーからソリューションのNuGetパッケージの管理を開く
+2. 参照タブを開いてインターネットに接続されている状態でeigenと検索
+3. eigenというライブラリが出てくるのでインストールを押すだけ
+
+------Eigenの基本的な使い方------
+
+1. 初期化: Vector3f v1(1.0, 2.0, 3.0); や Vector3f v2(v1); など
+2. 代入: v1 << 1.0, 2.0, 3.0; や v1 = v2; など
+3. 要素へのアクセス: v1.x() = 1.0; や float x = v.x(); など
+4. 演算: v1 + v2, v1 - v2, v1 * 1.0, v1 / 1.0, v1.dot(v2), v1.cross(v2) など
+5. 関数 f(const Vector3f& v) などに引数として渡す場合は f(v1) 以外にも f({ 1.0, 2.0, 3.0 }) などとできる
 
 ******************************************************************************************************************************/
 
-#include <GLUT/glut.h>
+#include "object.hpp"
+#include "camera.hpp"
+#include "light.hpp"
+#include "material.hpp"
+#include <GL/glut.h>
 #include <GL/freeglut.h>
 #include <Eigen/Dense>
 #include <iostream>
@@ -39,10 +43,6 @@
 #include <memory>
 #include <random>
 #include <chrono>
-#include "object.hpp"
-#include "camera.hpp"
-#include "light.hpp"
-#include "material.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -66,8 +66,28 @@ exponential_distribution<float> exponentialDistribution(0.002f);
 // 次に隕石が発生する時刻
 chrono::system_clock::time_point nextTime(chrono::system_clock::now());
 
+// どのキーが押されたか判定するフラグ
+unsigned int keyboardFlag(0);
+
+// オブジェクトの描画
+void draw()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// 隕石の描画
+	for_each(begin(meteorites), end(meteorites), [](const auto& meteorite)
+	{
+		meteorite->draw();
+	});
+
+	// ロケットの描画
+	rocket->draw();
+
+	glutSwapBuffers();
+}
+
 // オブジェクトの更新
-void update() 
+void update(int id)
 {
 	// 現在時刻
 	auto time(chrono::system_clock::now());
@@ -75,7 +95,11 @@ void update()
 	// 現在時刻が次に隕石発生時刻を超えたら隕石を発生させる
 	if (time > nextTime)
 	{
-		unique_ptr<Object> meteorite(make_unique<Meteorite>());
+		unique_ptr<Object> meteorite(make_unique<Object>());
+
+		// 球を表すメッシュをセット
+		meteorite->getMesh() = Mesh::createSphere(1.0, 12);
+		meteorite->getMesh().update();
 
 		// 隕石は常にロケットの位置の近くに発生するように正規分布を生成(標準偏差: 2.0)
 		normal_distribution<float> xDistribution(rocket->getPosition().x(), 2.0f);
@@ -83,12 +107,12 @@ void update()
 
 		// 位置、速度、加速度をセット
 		meteorite->setPosition({ xDistribution(engine), yDistribution(engine), 100.0f });
-		meteorite->setVelocity({ 0.0f, 0.0f, -0.01f });
+		meteorite->setVelocity({ 0.0f, 0.0f, -1.0f });
 		meteorite->setAcceleration({ 0.0f, 0.0f, 0.0f });
 
 		// マテリアルはとりあえず全部白
 		Material material;
-		material.setDiffuseColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+		material.setDiffuseColor({ 1.0f, 0.5f, 0.75f, 1.0f });
 		material.setAmbientColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 		material.setSpecularColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 		material.setShininess(10.0f);
@@ -117,24 +141,39 @@ void update()
 	// ロケットの更新
 	rocket->update();
 
-	glutPostRedisplay();
-}
-
-// オブジェクトの描画
-void draw()
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// 隕石の描画
-	for_each(begin(meteorites), end(meteorites), [](const auto& meteorite)
+	// キー入力によるロケット、カメラの更新
+	if (keyboardFlag & (1 << 0)) // UP
 	{
-		meteorite->draw();
-	});
+		rocket->setPosition(rocket->getPosition() + Vector3f(0.0f, -0.15f, 0.0f));
+		camera.setPosition(camera.getPosition() + Vector3f(0.0f, -0.15f, 0.0f));
+		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.15f));
+		camera.begin();
+	}
+	if (keyboardFlag & (1 << 1)) // LEFT
+	{
+		rocket->setPosition(rocket->getPosition() + Vector3f(-0.15f, 0.0f, 0.0f));
+		camera.setPosition(camera.getPosition() + Vector3f(-0.15f, 0.0f, 0.0f));
+		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.15f));
+		camera.begin();
+	}
+	if (keyboardFlag & (1 << 2)) // RIGHT
+	{
+		rocket->setPosition(rocket->getPosition() + Vector3f(+0.15f, 0.0f, 0.0f));
+		camera.setPosition(camera.getPosition() + Vector3f(+0.15f, 0.0f, 0.0f));
+		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.15f));
+		camera.begin();
+	}
+	if (keyboardFlag & (1 << 3)) // DOWN
+	{
+		rocket->setPosition(rocket->getPosition() + Vector3f(0.0f, +0.15f, 0.0f));
+		camera.setPosition(camera.getPosition() + Vector3f(0.0f, +0.15f, 0.0f));
+		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.15f));
+		camera.begin();
+	}
 
-	// ロケットの描画
-	rocket->draw();
+	glutPostRedisplay();
 
-	glutSwapBuffers();
+	glutTimerFunc(10, update, 0);
 }
 
 // キーボードコールバック関数
@@ -143,31 +182,40 @@ void keyboard(int key, int x, int y)
 	switch (key)
 	{
 	case GLUT_KEY_UP:
-		rocket->setPosition(rocket->getPosition() + Vector3f(0.0f, -0.05f, 0.0f));
-		camera.setPosition(camera.getPosition() + Vector3f(0.0f, -0.05f, 0.0f));
-		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.05f));
-		camera.begin();
-		break;
-
-	case GLUT_KEY_DOWN:
-		rocket->setPosition(rocket->getPosition() + Vector3f(0.0f, +0.05f, 0.0f));
-		camera.setPosition(camera.getPosition() + Vector3f(0.0f, +0.05f, 0.0f));
-		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.05f));
-		camera.begin();
+		keyboardFlag |= 1 << 0;//keyboardFlagの1bit目を1にする
 		break;
 
 	case GLUT_KEY_LEFT:
-		rocket->setPosition(rocket->getPosition() + Vector3f(-0.05f, 0.0f, 0.0f));
-		camera.setPosition(camera.getPosition() + Vector3f(-0.05f, 0.0f, 0.0f));
-		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.05f));
-		camera.begin();
+		keyboardFlag |= 1 << 1;//keyboardFlagの2bit目を1にする
 		break;
 
 	case GLUT_KEY_RIGHT:
-		rocket->setPosition(rocket->getPosition() + Vector3f(+0.05f, 0.0f, 0.0f));
-		camera.setPosition(camera.getPosition() + Vector3f(+0.05f, 0.0f, 0.0f));
-		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.05f));
-		camera.begin();
+		keyboardFlag |= 1 << 2;//keyboardFlagの3bit目を1にする
+		break;
+
+	case GLUT_KEY_DOWN:
+		keyboardFlag |= 1 << 3;//keyboardFlagの4bit目を1にする
+		break;
+	}
+}
+
+void keyboardUP(int key, int x, int y)
+{
+	switch (key)
+	{
+	case GLUT_KEY_UP:
+		keyboardFlag &= ~(1 << 0);//keyboardFlagの1bit目を0にする
+		break;
+	case GLUT_KEY_LEFT:
+		keyboardFlag &= ~(1 << 1);//keyboardFlagの2bit目を0にする
+		break;
+	case GLUT_KEY_RIGHT:
+		keyboardFlag &= ~(1 << 2);//keyboardFlagの3bit目を0にする
+		break;
+	case GLUT_KEY_DOWN:
+		keyboardFlag &= ~(1 << 3);//keyboardFlagの4bit目を0にする
+		break;
+	default:
 		break;
 	}
 }
@@ -176,7 +224,7 @@ void keyboard(int key, int x, int y)
 void resize(int width, int height)
 {
 	/*
-		ウィンドウサイズが変更された場合でも対応できるようにする
+	ウィンドウサイズが変更された場合でも対応できるようにする
 	*/
 }
 
@@ -209,16 +257,16 @@ void setup()
 	// ライト拡散反射光(白)
 	// ライト環境光(白)
 	// ライト鏡面反射光(白)
-	light.setPosition({ 0.0f, 10.0f, 0.0f, 1.0f });
+	light.setPosition({ 0.0f, -1.0f, 0.0f, 0.0f });
 	light.setDiffuseColor({ 1.0f, 1.0f, 1.0f, 1.0f });
-	light.setAmbientColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+	light.setAmbientColor({ 0.0f, 0.0f, 0.0f, 1.0f });
 	light.setSpecularColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 	light.begin();
 
 	// 背景色(黒)
-	glClearColor(0.0, 0.0, 0.0, 1.0);
+	glClearColor(0.01, 0.01, 0.01, 1.0);
 
-	rocket = make_unique<Rocket>();
+	rocket = make_unique<Object>();
 }
 
 int main(int argc, char **argv)
@@ -229,13 +277,16 @@ int main(int argc, char **argv)
 	glutInitWindowSize(600, 600);
 	glutCreateWindow("");
 
-	glutIdleFunc(update);
+	glewInit();
+
+	glutTimerFunc(0, update, 0);
 	glutDisplayFunc(draw);
 	glutSpecialFunc(keyboard);
+	glutSpecialUpFunc(keyboardUP);
 	glutReshapeFunc(resize);
 
 	setup();
 	glutMainLoop();
-	
+
 	return 0;
 }

@@ -1,10 +1,5 @@
 #include "object.hpp"
 
-void Object::setup()
-{
-	// なにか初期化したいときに
-}
-
 void Object::update()
 {
 	// 等加速度運動を仮定して位置更新
@@ -14,13 +9,22 @@ void Object::update()
 
 void Object::draw() const
 {
-	// 頂点座標を順に描画していく
-
+	// マテリアルを反映
 	material.begin();
 
 	glPushMatrix();
 	{
+		// 自分の位置に座標系を平行移動
 		glTranslatef(position.x(), position.y(), position.z());
+
+		// 頂点座標を描画
+		// mesh.draw();
+
+		glutSolidSphere(0.5, 30, 30);
+
+		// 以下のようにすると遅い
+
+		/*
 
 		glBegin(GL_TRIANGLES);
 		{
@@ -30,6 +34,8 @@ void Object::draw() const
 			});
 		}
 		glEnd();
+
+		*/
 	}
 	glPopMatrix();
 }
@@ -38,16 +44,8 @@ bool Object::colliding(const Object& object)
 {
 	// 衝突判定のコードをかく
 	// ...
-}
 
-vector<Vector3f, aligned_allocator<Vector3f>>& Object::getVertices()
-{
-	return vertices;
-}
-
-const vector<Vector3f, aligned_allocator<Vector3f>>& Object::getVertices() const
-{
-	return vertices;
+	return true;
 }
 
 Vector3f Object::getPosition() const
@@ -63,21 +61,6 @@ void Object::setPosition(const Vector3f& _position)
 void Object::setPosition(Vector3f&& _position)
 {
 	position = move(_position);
-}
-
-Vector3f Object::getOrientation() const
-{
-	return orientation;
-}
-
-void Object::setOrientation(const Vector3f& _orientation)
-{
-	orientation = _orientation;
-}
-
-void Object::setOrientation(Vector3f&& _orientation)
-{
-	orientation = move(_orientation);
 }
 
 Vector3f Object::getVelocity() const
@@ -123,4 +106,14 @@ void Object::setMaterial(const Material& _material)
 void Object::setMaterial(Material&& _material)
 {
 	material = move(_material);
+}
+
+Mesh& Object::getMesh()
+{
+	return mesh;
+}
+
+const Mesh& Object::getMesh() const
+{
+	return mesh;
 }

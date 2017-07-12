@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <GLUT/glut.h>
+#include <GL/glut.h>
 #include <GL/freeglut.h>
 
 using namespace std;
@@ -17,6 +17,8 @@ private:
 	float shininess;
 
 public:
+
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	Vector4f getDiffuseColor() const;
 	void setDiffuseColor(const Vector4f&);

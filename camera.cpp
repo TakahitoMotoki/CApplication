@@ -9,6 +9,7 @@ void Camera::setPosition(const Vector3f& _position)
 {
 	position = _position;
 }
+
 void Camera::setPosition(Vector3f&& _position)
 {
 	position = move(_position);
@@ -38,6 +39,7 @@ void Camera::setUpVector(const Vector3f& _upVector)
 {
 	upVector = _upVector;
 }
+
 void Camera::setUpVector(Vector3f&& _upVector)
 {
 	upVector = _upVector;
