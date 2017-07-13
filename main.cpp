@@ -141,32 +141,40 @@ void update(int id)
 	// ロケットの更新
 	rocket->update();
 
-	// キー入力によるロケット、カメラの更新
 	if (keyboardFlag & (1 << 0)) // UP
 	{
-		rocket->setPosition(rocket->getPosition() + Vector3f(0.0f, -0.15f, 0.0f));
-		camera.setPosition(camera.getPosition() + Vector3f(0.0f, -0.15f, 0.0f));
+		if (rocket->getPosition().y() >= -8.0f) {
+			rocket->setPosition(rocket->getPosition() + Vector3f(0.0f, -0.15f, 0.0f));
+			camera.setPosition(camera.getPosition() + Vector3f(0.0f, -0.15f, 0.0f));
+		}
 		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.15f));
 		camera.begin();
+
 	}
 	if (keyboardFlag & (1 << 1)) // LEFT
 	{
-		rocket->setPosition(rocket->getPosition() + Vector3f(-0.15f, 0.0f, 0.0f));
-		camera.setPosition(camera.getPosition() + Vector3f(-0.15f, 0.0f, 0.0f));
+		if (rocket->getPosition().x() >= -8.0f) {
+			rocket->setPosition(rocket->getPosition() + Vector3f(-0.15f, 0.0f, 0.0f));
+			camera.setPosition(camera.getPosition() + Vector3f(-0.15f, 0.0f, 0.0f));
+		}
 		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.15f));
 		camera.begin();
 	}
 	if (keyboardFlag & (1 << 2)) // RIGHT
 	{
-		rocket->setPosition(rocket->getPosition() + Vector3f(+0.15f, 0.0f, 0.0f));
-		camera.setPosition(camera.getPosition() + Vector3f(+0.15f, 0.0f, 0.0f));
+		if (rocket->getPosition().x() <= 8.0f) {
+			rocket->setPosition(rocket->getPosition() + Vector3f(+0.15f, 0.0f, 0.0f));
+			camera.setPosition(camera.getPosition() + Vector3f(+0.15f, 0.0f, 0.0f));
+		}
 		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.15f));
 		camera.begin();
 	}
 	if (keyboardFlag & (1 << 3)) // DOWN
 	{
-		rocket->setPosition(rocket->getPosition() + Vector3f(0.0f, +0.15f, 0.0f));
-		camera.setPosition(camera.getPosition() + Vector3f(0.0f, +0.15f, 0.0f));
+		if (rocket->getPosition().y() <= 8.0f) {
+			rocket->setPosition(rocket->getPosition() + Vector3f(0.0f, +0.15f, 0.0f));
+			camera.setPosition(camera.getPosition() + Vector3f(0.0f, +0.15f, 0.0f));
+		}
 		camera.setTarget(camera.getPosition() + Vector3f(0.0f, 0.0f, 0.15f));
 		camera.begin();
 	}
